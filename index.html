@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ad Auction Lab</title>
+  <meta name="description" content="Simulate a day of programmatic ad auctions. Compare second price, first price, and GSP, four bidding strategies, budget pacing, and frequency caps on spend, wins, conversions, and publisher revenue.">
+  <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Ad Auction Lab</h1>
+      <p class="sub">One day of a publisher's ad impressions, auctioned one by one to a set of advertisers. How the auction format, each bidder's strategy, budget pacing, and frequency caps change who wins, what they pay, and what they get for it.</p>
+    </div>
+    <div class="actions">
+      <button type="button" id="share">Copy share link</button>
+      <button type="button" id="reset" class="ghost">Reset</button>
+    </div>
+  </header>
+
+  <section class="presets-wrap">
+    <div class="presets" id="presets" role="group" aria-label="Scenario"></div>
+    <p class="hint" id="preset-note"></p>
+  </section>
+
+  <main class="layout">
+    <form id="form" class="panel" autocomplete="off"></form>
+
+    <section class="results">
+      <div class="panel rec">
+        <div class="chart-head">
+          <h2>What happened today</h2>
+          <span class="hint tl-run" id="status" role="status"></span>
+        </div>
+        <p id="rec" class="rec-text"></p>
+      </div>
+
+      <div class="cards" id="cards"></div>
+
+      <div class="panel">
+        <h2>Advertisers</h2>
+        <p class="hint pack-sub">Edit any cell. Value per conversion is what a conversion is worth to the business. The goal sets what the bidder will pay: a target CPA, or value per conversion over a target ROAS. Click a name to focus that advertiser.</p>
+        <div class="table-scroll">
+          <table class="items setup">
+            <thead><tr>
+              <th title="Under each name: the user segment and page context its ads do best with, and its base click and conversion rates">Advertiser</th>
+              <th title="How the advertiser turns a predicted conversion rate into a bid">Strategy</th>
+              <th title="Cost per acquisition or return on ad spend">Goal</th>
+              <th class="num" title="Target CPA in dollars, or target ROAS as a multiple">Target</th>
+              <th class="num" title="Dollars a conversion is worth to the advertiser">Value / conv</th>
+              <th class="num" title="Dollars for the day">Budget</th>
+              <th class="num" title="Only used by the fixed bid strategy">Fixed CPM</th>
+            </tr></thead>
+            <tbody id="setup-rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Results by advertiser</h2>
+        <div class="table-scroll">
+          <table class="items compact">
+            <thead><tr>
+              <th>Advertiser</th>
+              <th class="num" title="Ad impressions won">Impr.</th>
+              <th class="num" title="Unique users reached, and impressions per user">Reach, freq</th>
+              <th class="num" title="Impressions after a user's third from this advertiser today, when fatigue has cut the click rate by more than half">Wasted</th>
+              <th class="num" title="Expected clicks and conversions">Clicks, conv</th>
+              <th class="num">Spend</th>
+              <th class="num" title="Average price paid per thousand impressions">CPM</th>
+              <th class="num" title="Spend over conversions">CPA</th>
+              <th class="num" title="Conversion value over spend">ROAS</th>
+              <th class="num" title="Share of the daily budget spent">Budget used</th>
+              <th class="num" title="When less than 1% of the budget was left">Out at</th>
+            </tr></thead>
+            <tbody id="adv-rows"></tbody>
+          </table>
+        </div>
+        <p class="hint" id="adv-note"></p>
+      </div>
+
+      <div class="panel">
+        <div class="chart-head">
+          <h2>Spend over the day against the target curve</h2>
+        </div>
+        <ul class="legend advs" id="spend-legend"></ul>
+        <div class="chart-wrap"><svg id="c-spend" class="chart" role="img" aria-label="Cumulative spend as a share of budget for each advertiser, with the target pacing curve"></svg><div class="tooltip" hidden></div></div>
+        <p class="hint" id="spend-note"></p>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <h2>Win rate</h2>
+          <p class="hint pack-sub">Auctions won over auctions bid in, with the average bid and the average price paid.</p>
+          <div class="table-scroll">
+            <table class="items">
+              <thead><tr><th>Advertiser</th><th class="num" title="Auctions entered with a bid at or over the floor">Bids</th><th class="bar-col">Win rate</th><th class="num" title="Average bid and average price paid, CPM">Bid</th></tr></thead>
+              <tbody id="win-rows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Clearing prices</h2>
+          <p class="hint pack-sub">Price paid per thousand impressions, every ad impression sold today, stacked by winner.</p>
+          <div class="chart-wrap"><svg id="c-price" class="chart" role="img" aria-label="Histogram of prices paid, stacked by winning advertiser"></svg><div class="tooltip" hidden></div></div>
+          <p class="hint" id="price-note"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="chart-head">
+          <h2>Auction formats on the same impressions</h2>
+          <span class="hint tl-run" id="cmp-status"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="items" id="fmt-table">
+            <thead><tr>
+              <th>Format</th>
+              <th class="num" title="Sum of prices paid">Publisher revenue</th>
+              <th class="num" title="Value of conversions minus spend, all advertisers">Advertiser surplus</th>
+              <th class="num" title="Value of all conversions: revenue plus surplus">Welfare</th>
+              <th class="num" title="Expected conversions">Conv</th>
+              <th class="num" title="Ad impressions sold">Ad impr.</th>
+              <th class="num">Avg CPM</th>
+              <th class="num" title="Page views with at least one ad sold">Fill</th>
+            </tr></thead>
+            <tbody id="fmt-rows"></tbody>
+          </table>
+        </div>
+        <p class="hint" id="fmt-note"></p>
+
+        <h3 class="sub-h" id="truth-h">Bidding above or below value</h3>
+        <p class="hint pack-sub" id="truth-sub"></p>
+        <div class="table-scroll">
+          <table class="items">
+            <thead><tr>
+              <th>Bid as share of value</th>
+              <th class="num">Second price: surplus</th>
+              <th class="num">wins</th>
+              <th class="num">First price: surplus</th>
+              <th class="num">wins</th>
+            </tr></thead>
+            <tbody id="truth-rows"></tbody>
+          </table>
+        </div>
+        <p class="hint" id="truth-note"></p>
+      </div>
+
+      <div class="panel">
+        <h2>Pacing on the same impressions</h2>
+        <div class="table-scroll">
+          <table class="items">
+            <thead><tr>
+              <th>Pacing</th>
+              <th class="num" title="Expected conversions, all advertisers">Conv</th>
+              <th class="num" title="Value of conversions">Welfare</th>
+              <th class="num">Spend</th>
+              <th class="num" title="Spend over conversions">CPA</th>
+              <th class="num" title="Advertisers whose budget ran out before 18:00">Out before 18:00</th>
+              <th class="num">Earliest out</th>
+            </tr></thead>
+            <tbody id="pace-rows"></tbody>
+          </table>
+        </div>
+        <p class="hint" id="pace-note"></p>
+      </div>
+
+      <div class="panel">
+        <h2>Auction inspector</h2>
+        <div class="inspect-ctl">
+          <button type="button" class="tab" id="prev" aria-label="Previous auction">Prev</button>
+          <input type="range" id="pick" min="0" max="0" step="1" value="0" aria-label="Auction number">
+          <button type="button" class="tab" id="next" aria-label="Next auction">Next</button>
+          <button type="button" class="tab" id="close-race" title="Jump to the next auction where the top two bids are within 5%">Close race</button>
+          <button type="button" class="tab" id="focus-win" title="Jump to the next auction the focus advertiser won">Focus wins</button>
+        </div>
+        <div class="inspect-meta" id="inspect-meta"></div>
+        <div class="table-scroll">
+          <table class="items">
+            <thead><tr>
+              <th>Advertiser</th>
+              <th class="num" title="Goal value times predicted conversion rate, CPM">Value</th>
+              <th class="num" title="Bid multiplier or share of auctions entered, from the pacing controller">Pacing</th>
+              <th class="num" title="Bid sent to the exchange, CPM">Bid</th>
+              <th>Result</th>
+              <th class="num" title="Price paid, CPM">Paid</th>
+            </tr></thead>
+            <tbody id="inspect-rows"></tbody>
+          </table>
+        </div>
+        <p class="verdict-line" id="inspect-note"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">Runs entirely in your browser. Settings are stored in the page URL so a scenario can be shared as a link. The advertisers, users, and prices are made up.</footer>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

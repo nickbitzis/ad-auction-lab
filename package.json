@@ -1,0 +1,11 @@
+{
+  "name": "ad-auction-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simulate a day of programmatic ad auctions: auction format, bidding strategy, budget pacing, and frequency caps compared on spend, wins, conversions, and publisher revenue.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test"
+  }
+}
